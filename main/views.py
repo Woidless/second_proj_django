@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework import generics, permissions
 from . import serializers
 from .permissions import IsAuthor
-from main.models import Category, Post
+from main.models import Category, Post, Comment
 
 # function based view
 
@@ -30,13 +30,13 @@ from main.models import Category, Post
 #             serializer.save()
 #             return Response(serializer.data, status=201)
 
-        
-# 
+''' '''
 
 class CategoryListView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
 
+''' '''
 
 class PostListCreateView(generics.ListCreateAPIView):
     queryset = Post.objects.all()
@@ -50,17 +50,42 @@ class PostListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+''' '''
     
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.all()
     # serializer_class = serializers.
-    def get_serializer_class(self):
-        if self.request.method in ('PUT', 'PATCH'):
-            return serializers.PostCreateSerializer
-        return serializers.PostSerializer
         
     def get_permissions(self):
         if self.request.method in ('PUT', 'PATCH', 'DELETE'):
             return (permissions.IsAuthenticated(), IsAuthor())
         return (permissions.AllowAny(),)
 
+    def get_serializer_class(self):
+        if self.request.method in ('PUT', 'PATCH'):
+            return serializers.PostCreateSerializer
+        return serializers.PostSerializer
+
+''' '''
+
+class CommentListCreateView(generics.ListCreateAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = serializers.CommentSerializers
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+''' '''
+
+class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = serializers.CommentSerializers
+    # permission_classes = (permissions.IsAuthenticatedOrReadOnly, IsAuthor)
+
+    def get_permissions(self):
+        if self.request.method in ('GET'): return (permissions.AllowAny(),)
+        return (permissions.IsAuthenticated(), IsAuthor())
+        
+    

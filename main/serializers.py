@@ -1,5 +1,6 @@
+from unicodedata import category
 from rest_framework import serializers
-from .models import Category, Post
+from .models import Category, Post, Comment
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -19,15 +20,22 @@ class PostListSerializer(serializers.ModelSerializer):
 class PostCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
-        fields = ('title',
-                    'body',
-                    'category',
-                    'preview',)
+        fields = ('title', 'body', 'category', 'preview',)
     
 
 class PostSerializer(serializers.ModelSerializer):
+    category = serializers.ReadOnlyField(source='category.name')
     owner = serializers.ReadOnlyField(source='owner.username')
 
     class Meta:
         model = Post
         fields = '__all__'
+
+
+class CommentSerializers(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
+    class Meta:
+        model = Comment
+        fields = ('id', 'body', 'post', 'owner')
+        
