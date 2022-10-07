@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from rest_auth.views import LoginView, LogoutView
 from rest_framework import generics, permissions
+from rest_framework.filters import SearchFilter
 from django.contrib.auth.models import User
 from . import serializers
 from .permissions import IsAccountOwner
@@ -20,6 +21,8 @@ class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = serializers.UserListSerializers
+    filter_backends = (SearchFilter,)
+    search_fields = ('username', 'email')
 
 
 class UserDetailview(generics.RetrieveAPIView):

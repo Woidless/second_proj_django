@@ -43,7 +43,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
 class CommentSerializers(serializers.ModelSerializer):
     owner = serializers.ReadOnlyField(source='owner.username')
-    post = serializers.ReadOnlyField(source='post.title')
+    # post = serializers.ReadOnlyField(source='post.title')
     
     class Meta:
         model = Comment
