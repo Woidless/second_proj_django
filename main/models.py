@@ -1,4 +1,5 @@
 from django.db import models
+from requests import post
 
 class Category(models.Model):
     name = models.CharField(max_length=150)
@@ -76,3 +77,27 @@ class PostImage(models.Model):
     def save(self, *args, **kwargs) -> None:
         self.title = self.generate_name()
         return super(PostImage, self).save(*args, **kwargs)
+
+
+class Like(models.Model):
+    owner = models.ForeignKey('auth.User',
+                            on_delete=models.CASCADE,
+                            related_name='liked')
+    post = models.ForeignKey(Post,
+                            on_delete=models.CASCADE,
+                            related_name='likes')
+
+    class Meta:
+        unique_together = ['owner', 'post']
+
+
+class Favorites(models.Model):
+    owner = models.ForeignKey('auth.User',
+                            on_delete=models.CASCADE,
+                            related_name='favorites')
+    post = models.ForeignKey(Post,
+                            on_delete=models.CASCADE,
+                            related_name='favorite')
+
+    class Meta:
+        unique_together = ['owner', 'post']

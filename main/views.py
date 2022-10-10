@@ -13,7 +13,7 @@ from . import serializers
 
 
 from .permissions import IsAuthor
-from main.models import Category, Post, Comment
+from main.models import Category, Favorites, Like, Post, Comment
 
 class StandartResultPagination(PageNumberPagination):
     page_size = 3
@@ -51,13 +51,16 @@ class PostViewSet(ModelViewSet):
         if self.action in ('update', 'partial_update', 'destroy'):
             return [permissions.IsAuthenticated(), IsAuthor()]
         # login user can create
-        elif self.action == 'create':
+        elif self.action in ('create',
+                            'add_to_liked',
+                            'remove_from_liked',
+                            'favorite_action',):
             return [permissions.IsAuthenticated()]
         # everybody can see
         else:
             return [permissions.AllowAny()]
 
-    # posts/<id>/comments
+    # posts/<id>/comments/
     @action(['GET'], detail=True)
     def comments(self, request, pk):
         post = self.get_object()
@@ -65,8 +68,48 @@ class PostViewSet(ModelViewSet):
         serializer = serializers.CommentSerializers(comments, many=True)
         return Response(serializer.data, status=200)
 
-''' '''
+    # posts/<id>/add_to_liked/
+    @action(['POST'], detail=True)
+    def add_to_liked(self, request, pk):
+        post = self.get_object()
+        user = request.user
 
+        if user.liked.filter(post=post).exists():
+            return Response('This post is already liked!', status=404)
+        Like.objects.create(owner=user, post=post)
+        return Response('You liked post!', status=201)
+
+    # posts/<id>/remove_from_liked/
+    @action(['DELETE'], detail=True)
+    def remove_from_liked(self, request, pk):
+        post = self.get_object()
+        user = request.user
+
+        if not user.liked.filter(post=post).exists():
+            return Response('You didn\'t liked this post!', status=400)
+        user.liked.filter(post=post).delete()
+        return Response('Your like is deleted!', status=204)
+
+    # posts/<id>/get_likes/
+    @action(['GET'], detail=True)
+    def get_likes(self, request, pk):
+        post = self.get_object()
+        likes = post.likes.all()
+        serializer = serializers.LikeSerializer(likes, many=True)
+        return Response(serializer.data, status=200)
+
+    # posts/<id>/get_likes/
+    @action(['POST'], detail=True)
+    def favorite_action(self, request, pk):
+        post = self.get_object()
+        user = request.user
+        if user.favorites.filter(post=post).exists():
+            user.favorites.filter(post=post).delete()
+            return Response('Deleted from FAV', status= 204)
+        Favorites.objects.create(owner=user, post=post)
+        return Response('Added to FAV', status=201)
+
+''' '''
 class CommentListCreateView(generics.ListCreateAPIView):
     queryset = Comment.objects.all()
     serializer_class = serializers.CommentSerializers
@@ -77,7 +120,6 @@ class CommentListCreateView(generics.ListCreateAPIView):
 
 
 ''' '''
-
 class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Comment.objects.all()
     serializer_class = serializers.CommentSerializers
@@ -87,7 +129,26 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method in ('GET'): return (permissions.AllowAny(),)
         return (permissions.IsAuthenticated(), IsAuthor())
         
+
+''' '''
+
+
+
+
+''' '''
+# class LikeCreateView(generics.CreateAPIView):
+#     permission_classes = (permissions.IsAuthenticated,)
+#     serializer_class = serializers.LikeSerializer
+
+#     def perform_create(self, serializer):
+#         serializer.save(owner=self.request.user)
+
+''' '''
+# class LikeDeleteView(generics.DestroyAPIView):
+#     queryset = Like.objects.all()
+#     permission_classes = (permissions.IsAuthenticated, IsAuthor)
     
+
 ''' '''
 # class PostListCreateView(generics.ListCreateAPIView):
 #     queryset = Post.objects.all()

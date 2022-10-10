@@ -1,7 +1,7 @@
 from unicodedata import category
 from urllib import request
 from rest_framework import serializers
-from .models import Category, Post, Comment, PostImage
+from .models import Category, Favorites, Like, Post, Comment, PostImage
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -15,7 +15,12 @@ class PostListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ('id', 'title', 'owner', 'preview')
+        fields = ('id', 'title', 'owner', 'preview',)
+    
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        repr['likes_count'] = instance.likes.count()
+        return repr
 
 
 class PostImageSerializer(serializers.ModelSerializer):
@@ -34,9 +39,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         post = Post.objects.create(**validated_data)
         images_data = request.FILES.getlist('images')
-        print(images_data,'\n'+'='*100)
         images_objects = [PostImage(post=post, image=image) for image in images_data]
-        print(images_objects, '\n'+'='*100)
         PostImage.objects.bulk_create(images_objects)
         return post
 
@@ -61,3 +64,20 @@ class PostSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class LikeSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+
+    class Meta:
+        model = Like
+        fields = ('owner', 'post')
+
+
+class FvorateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorites
+        fields = ('post',)
+
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        repr['posts'] = PostListSerializer(instance.post).data
+        return repr
